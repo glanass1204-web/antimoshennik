@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Антимошенник — подписка на предупреждения</title>
+<meta name="description" content="«Антимошенник» — короткие предупреждения о свежих схемах обмана. Узнайте о новой схеме раньше мошенников и защитите себя и близких. Проверь, прежде чем поверить.">
+<meta name="theme-color" content="#F3EBDD">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:site_name" content="Антимошенник">
+<meta property="og:title" content="Антимошенник — подписка на предупреждения">
+<meta property="og:description" content="Узнайте о новой схеме раньше мошенников. Короткие предупреждения о свежих схемах обмана — для вас и ваших близких.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 8 13v17c0 15 10 26 24 30 14-4 24-15 24-30V13Z' fill='%23141210'/%3E%3Cpath d='m20 32 8 8 16-17' fill='none' stroke='%23C8F04A' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Rubik:wght@400;500;700&display=swap&subset=cyrillic" rel="stylesheet">
+
+<script>
+  /* ================= НАСТРОЙКИ ================= */
+  /* Вставьте сюда ссылку на веб-приложение Google Apps Script (заканчивается на /exec) */
+  const SHEET_ENDPOINT = "";
+  /* Ссылка на сервис проверки сообщений. Пусто — кнопка «Проверить сообщение» скрыта */
+  const SCAM_CHECK_URL = "https://shchit-ot-moshennikov.onrender.com";
+  /* ============================================= */
+</script>
+
+<style>
+:root{
+  --paper:#F3EBDD;
+  --paper-2:#FBF6EC;
+  --ink:#141210;
+  --ink-2:#3B3631;
+  --muted:#5E564D;
+  --lime:#C8F04A;
+  --terra:#C2603A;
+  --orange:#F07F22;
+  --red:#D7261E;
+  --green:#1F8A4C;
+  --radius:14px;
+  --head:'Oswald','Arial Narrow','Roboto Condensed',Impact,sans-serif;
+  --body:'Rubik','Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --torn:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 20' preserveAspectRatio='none'%3E%3Cpath d='M0 20V12L8 6L15 11L22 4L31 9L38 3L47 10L55 5L63 12L70 6L79 9L86 2L95 8L103 4L111 11L119 5L128 9L136 3L144 10L152 6L161 12L169 4L178 9L186 5L194 10L200 12V20Z'/%3E%3C/svg%3E");
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html,body{overflow-x:hidden}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+body{
+  margin:0;color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;
+  background-color:var(--paper);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .26 0 0 0 0 .18 0 0 0 .10 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(1200px 600px at 10% -10%, #FFF8EA 0%, transparent 60%),
+    radial-gradient(900px 700px at 110% 30%, #EADFCB 0%, transparent 60%);
+}
+img,svg{max-width:100%}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 6px var(--lime);border-radius:6px}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip{position:absolute;left:12px;top:-60px;background:var(--ink);color:#fff;padding:10px 14px;border-radius:8px;z-index:50;text-decoration:none}
+.skip:focus{top:12px}
+.wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 16px}
+
+/* ---------- typography ---------- */
+.h1,.h2,.h3{font-family:var(--head);font-weight:700;text-transform:uppercase;letter-spacing:.005em;line-height:.98;margin:0}
+.h1{font-size:clamp(2.55rem,11.4vw,5.6rem)}
+.h2{font-size:clamp(2.1rem,8.6vw,3.9rem)}
+.h3{font-size:clamp(1.35rem,5.4vw,1.75rem);line-height:1.05}
+.kicker{display:inline-block;font-family:var(--head);font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:.95rem;background:var(--ink);color:var(--paper);padding:4px 10px 3px;transform:rotate(-2deg);margin-bottom:14px}
+.lead{font-size:1.08rem;color:var(--ink-2);max-width:36em}
+
+/* lime highlighter */
+.hl{position:relative;display:inline-block;z-index:0;white-space:nowrap}
+.hl::before{
+  content:"";position:absolute;z-index:-1;left:-.12em;right:-.12em;bottom:.04em;height:.52em;
+  background:var(--lime);border-radius:.18em .5em .22em .6em;
+  transform:scaleX(0) skewX(-8deg) rotate(-1.2deg);transform-origin:left center;
+  transition:transform .9s cubic-bezier(.65,.05,.3,1) .25s;
+}
+.hl.in::before{transform:scaleX(1) skewX(-8deg) rotate(-1.2deg)}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5em;
+  font-family:var(--head);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:1.12rem;line-height:1.1;
+  padding:15px 22px;border:3px solid var(--ink);border-radius:10px;text-decoration:none;cursor:pointer;
+  background:var(--lime);color:var(--ink);box-shadow:5px 5px 0 var(--ink);
+  transition:transform .15s ease, box-shadow .15s ease, background .2s;
+  min-height:52px;text-align:center;
+}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--ink)}
+.btn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--ink)}
+.btn--ghost{background:var(--paper-2)}
+.btn--dark{background:var(--ink);color:var(--paper);box-shadow:5px 5px 0 var(--terra)}
+.btn--dark:hover{box-shadow:7px 7px 0 var(--terra)}
+.btn--sm{font-size:.98rem;padding:10px 16px;min-height:46px;box-shadow:4px 4px 0 var(--ink)}
+.btn[disabled]{cursor:not-allowed;opacity:.75;transform:none;box-shadow:3px 3px 0 var(--ink)}
+
+/* ---------- decorative ---------- */
+.scrap{position:absolute;background:var(--terra);pointer-events:none;z-index:0;opacity:.95}
+.scrap--a{clip-path:polygon(4% 10%,92% 0,100% 70%,70% 100%,8% 86%,0 40%)}
+.scrap--b{clip-path:polygon(0 18%,60% 0,100% 34%,86% 100%,20% 90%)}
+.scrap--c{clip-path:polygon(10% 0,100% 12%,88% 92%,0 100%,6% 50%)}
+.zig{position:absolute;pointer-events:none;z-index:0;color:var(--orange)}
+.tape{position:absolute;width:86px;height:26px;background:rgba(200,240,74,.75);transform:rotate(-6deg);top:-12px;left:50%;margin-left:-43px;z-index:3;
+  clip-path:polygon(3% 0,97% 6%,100% 50%,96% 100%,2% 94%,0 50%)}
+
+/* torn paper section */
+.paper{position:relative;background:var(--paper-2);filter:drop-shadow(0 4px 6px rgba(60,40,20,.12));z-index:1}
+.paper::before,.paper::after{
+  content:"";position:absolute;left:0;right:0;height:18px;background:var(--paper-2);
+  -webkit-mask:var(--torn) repeat-x 0 0/220px 18px;mask:var(--torn) repeat-x 0 0/220px 18px;
+}
+.paper::before{top:-17px}
+.paper::after{bottom:-17px;transform:scaleY(-1)}
+.paper--ink{background:var(--ink);color:var(--paper)}
+.paper--ink::before,.paper--ink::after{background:var(--ink)}
+
+section{position:relative}
+.sec{padding:76px 0}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(46px) rotate(-1.6deg);transition:opacity .7s ease, transform .8s cubic-bezier(.2,.8,.2,1)}
+.reveal.r{transform:translateY(46px) rotate(1.6deg)}
+.reveal.side{transform:translateX(-40px) rotate(-2.5deg)}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.18s}.d3{transition-delay:.28s}
+
+/* ---------- header ---------- */
+.top{padding:18px 0 0;position:relative;z-index:5}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wordmark{display:inline-flex;align-items:center;gap:8px;font-family:var(--head);font-weight:700;font-size:1.3rem;letter-spacing:.04em;text-decoration:none;text-transform:uppercase}
+.wordmark svg{width:28px;height:28px;flex:none}
+.top-links{display:flex;gap:6px;flex:none}
+@media (max-width:400px){.wordmark{font-size:1.05rem;gap:6px}.wordmark svg{width:22px;height:22px}.chip-link{font-size:.8rem;padding:4px 8px}.foot .wordmark svg{width:32px;height:32px}}
+.chip-link{font-family:var(--head);font-weight:600;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:5px 11px;background:var(--paper-2)}
+.chip-link:hover{background:var(--lime)}
+
+/* ---------- hero ---------- */
+.hero{padding:30px 0 70px;overflow:hidden}
+.hero-grid{display:grid;gap:44px;align-items:center;position:relative;z-index:1}
+.hero .tagline{font-family:var(--head);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:1rem;margin:18px 0 0;display:flex;align-items:center;gap:10px}
+.hero .tagline::before{content:"";width:28px;height:3px;background:var(--red);flex:none}
+.hero .lead{margin:14px 0 26px}
+.cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.cta-row .btn:first-child{flex:1 1 100%}
+.sub-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+
+/* phone */
+.phone-stage{position:relative;display:flex;justify-content:center;padding:10px 0 20px}
+.phone{
+  position:relative;width:min(300px,80vw);aspect-ratio:9/17.5;background:#151311;border-radius:38px;padding:12px;
+  box-shadow:0 0 0 3px #2a2622, 14px 18px 0 rgba(20,18,16,.18);transform:rotate(3deg);z-index:2
+}
+.phone::before{content:"";position:absolute;top:18px;left:50%;width:70px;height:18px;margin-left:-35px;background:#151311;border-radius:12px;z-index:3}
+.screen{position:relative;height:100%;border-radius:28px;overflow:hidden;background:#EDE7DC;display:flex;flex-direction:column}
+.screen-head{padding:40px 14px 10px;background:#fff;border-bottom:1px solid #ddd5c8;display:flex;align-items:center;gap:10px;font-size:.82rem}
+.avatar{width:32px;height:32px;border-radius:50%;background:#B9B0A3;display:grid;place-items:center;color:#fff;font-weight:700;flex:none}
+.screen-head b{display:block;font-size:.9rem;line-height:1.2}
+.screen-head span{color:#7c7366}
+.msgs{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.msg{
+  align-self:flex-start;max-width:88%;background:#fff;border-radius:14px 14px 14px 4px;padding:9px 11px;font-size:.84rem;line-height:1.35;
+  box-shadow:0 1px 1px rgba(0,0,0,.08);opacity:0;transform:translateY(14px) scale(.9);transform-origin:left bottom
+}
+.msg small{display:block;color:#958b7d;font-size:.68rem;margin-top:3px;text-align:right}
+.typing{align-self:flex-start;background:#fff;border-radius:14px;padding:10px 12px;display:flex;gap:4px;opacity:0}
+.typing i{width:6px;height:6px;border-radius:50%;background:#a99f92;animation:dot 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+.stamp{
+  position:absolute;left:50%;top:52%;z-index:5;font-family:var(--head);font-weight:700;font-size:clamp(2rem,10vw,2.7rem);letter-spacing:.04em;
+  color:var(--red);border:5px solid var(--red);border-radius:8px;padding:2px 14px;background:rgba(251,246,236,.55);
+  transform:translate(-50%,-50%) rotate(-16deg) scale(3);opacity:0;mix-blend-mode:multiply;white-space:nowrap;
+  -webkit-mask:radial-gradient(circle at 30% 40%,#000 60%,rgba(0,0,0,.75) 61%,#000 75%);
+}
+.phone.play .m1{animation:pop .45s cubic-bezier(.2,1.4,.4,1) .6s forwards}
+.phone.play .m2{animation:pop .45s cubic-bezier(.2,1.4,.4,1) 2.1s forwards}
+.phone.play .m3{animation:pop .45s cubic-bezier(.2,1.4,.4,1) 3.6s forwards}
+.phone.play .typing{animation:typing 4.4s linear .1s forwards}
+.phone.play .stamp{animation:slam .5s cubic-bezier(.5,0,.6,1.4) 5s forwards}
+.phone.play{animation:shake .4s ease 5.35s}
+@keyframes pop{to{opacity:1;transform:none}}
+@keyframes typing{0%{opacity:0}5%,30%{opacity:1}33%,38%{opacity:0}40%,64%{opacity:1}67%,72%{opacity:0}74%,96%{opacity:1}100%{opacity:0;height:0;padding:0;margin:0}}
+@keyframes slam{0%{opacity:0;transform:translate(-50%,-50%) rotate(-16deg) scale(3)}70%{opacity:1;transform:translate(-50%,-50%) rotate(-16deg) scale(.92)}100%{opacity:1;transform:translate(-50%,-50%) rotate(-16deg) scale(1)}}
+@keyframes shake{0%,100%{transform:rotate(3deg)}25%{transform:rotate(1deg) translateX(-4px)}50%{transform:rotate(5deg) translateX(4px)}75%{transform:rotate(2deg) translateX(-2px)}}
+.phone.static .msg,.phone.static .stamp{opacity:1;transform:none}
+.phone.static .stamp{transform:translate(-50%,-50%) rotate(-16deg)}
+.phone.static .typing{display:none}
+
+/* ---------- marquee ---------- */
+.ticker{overflow:hidden;background:var(--ink);color:var(--lime);transform:rotate(-2deg);margin:-10px -20px 0;padding:13px 0;position:relative;z-index:3;border-top:3px solid var(--orange);border-bottom:3px solid var(--orange)}
+.ticker-track{display:flex;width:max-content;animation:marquee 38s linear infinite}
+.ticker ul{display:flex;list-style:none;margin:0;padding:0}
+.ticker li{font-family:var(--head);font-weight:700;text-transform:uppercase;font-size:1.25rem;letter-spacing:.04em;white-space:nowrap;padding:0 18px;display:flex;align-items:center;gap:36px}
+.ticker li::after{content:"✕";color:var(--orange);font-size:1rem}
+.ticker:hover .ticker-track{animation-play-state:paused}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+/* ---------- steps ---------- */
+.sec-head{margin-bottom:34px;position:relative;z-index:1}
+.sec-head .lead{margin-top:12px}
+.steps{display:grid;gap:30px;list-style:none;margin:0;padding:0;counter-reset:s}
+.step{position:relative;background:var(--paper);border:2.5px solid var(--ink);border-radius:var(--radius);padding:24px 20px 22px;box-shadow:6px 6px 0 var(--ink)}
+.step:nth-child(2){transform:rotate(.8deg)}
+.step:nth-child(2).reveal:not(.in){transform:translateY(46px) rotate(2.4deg)}
+.step-num{font-family:var(--head);font-weight:700;font-size:4.2rem;line-height:.8;color:var(--terra);display:block;margin-bottom:10px}
+.step p{margin:8px 0 0;color:var(--ink-2)}
+.step .arrow{display:none}
+
+/* ---------- quiz ---------- */
+.quiz-list{display:grid;gap:22px;list-style:none;padding:0;margin:0}
+.q{background:var(--paper-2);border:2.5px solid var(--ink);border-radius:var(--radius);padding:18px;position:relative;box-shadow:5px 5px 0 rgba(20,18,16,.85)}
+.q-from{font-size:.82rem;color:var(--muted);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.q-from::before{content:"";width:9px;height:9px;border-radius:50%;background:#B9B0A3}
+.q-bubble{background:#fff;border:1.5px solid #d9cfbf;border-radius:14px 14px 14px 4px;padding:12px 14px;font-size:.98rem;line-height:1.45;margin:0}
+.q-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.q-btn{font-family:var(--body);font-weight:700;font-size:.98rem;border:2.5px solid var(--ink);border-radius:10px;padding:12px 8px;min-height:50px;cursor:pointer;background:var(--paper);color:var(--ink);transition:transform .12s, background .2s}
+.q-btn:hover:not([disabled]){transform:translateY(-2px)}
+.q-btn[disabled]{cursor:default}
+.q-btn.chosen.right{background:var(--lime)}
+.q-btn.chosen.wrong{background:#F6C9C4}
+.q-btn.dim{opacity:.45}
+.q-verdict{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;border-left:6px solid var(--ink);background:var(--paper);font-size:.95rem;animation:pop .4s ease forwards;opacity:0;transform:translateY(8px)}
+.q-verdict.show{display:block}
+.q-verdict b{display:block;font-family:var(--head);text-transform:uppercase;font-size:1.15rem;letter-spacing:.03em;margin-bottom:2px}
+.q-verdict.scam{border-color:var(--red)}
+.q-verdict.scam b{color:var(--red)}
+.q-verdict.ok{border-color:var(--green)}
+.q-verdict.ok b{color:var(--green)}
+.q-badge{position:absolute;top:-14px;right:14px;font-family:var(--head);font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;padding:3px 10px;border:2px solid currentColor;border-radius:6px;background:var(--paper-2);transform:rotate(6deg) scale(0);transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.q-badge.show{transform:rotate(6deg) scale(1)}
+.q-badge.scam{color:var(--red)}.q-badge.ok{color:var(--green)}
+.quiz-result{margin-top:26px;padding:18px 20px;border:2.5px dashed var(--ink);border-radius:var(--radius);display:none;font-size:1.05rem}
+.quiz-result.show{display:block;animation:pop .5s ease forwards;opacity:0;transform:translateY(10px)}
+.quiz-result strong{font-family:var(--head);font-size:1.6rem;text-transform:uppercase;display:block;line-height:1.1;margin-bottom:4px}
+
+/* ---------- scheme cards ---------- */
+.cards{display:grid;gap:30px}
+.card{position:relative;background:var(--paper);border:2.5px solid var(--ink);border-radius:var(--radius);padding:26px 20px 20px}
+.card:nth-child(odd){transform:rotate(-.6deg)}
+.card:nth-child(even){transform:rotate(.7deg)}
+.card.reveal:not(.in){transform:translateY(46px) rotate(-3deg)}
+.card-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.dot{width:16px;height:16px;border-radius:50%;background:var(--red);flex:none;margin-top:6px;box-shadow:0 0 0 4px rgba(215,38,30,.18);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(215,38,30,0)}}
+.card p{margin:0;color:var(--ink-2)}
+.tip{margin-top:14px!important;padding:10px 12px;background:rgba(200,240,74,.45);border-radius:8px;color:var(--ink)!important;font-size:.96rem}
+.verdict-label{display:inline-block;font-family:var(--head);font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:6px}
+
+/* ---------- form ---------- */
+.form-shell{position:relative;max-width:640px;margin:0 auto}
+.form-card{position:relative;background:var(--paper-2);border:3px solid var(--ink);border-radius:18px;padding:30px 18px 24px;box-shadow:8px 8px 0 var(--ink);z-index:1}
+.field{margin-bottom:18px}
+.field > label,.legend{display:block;font-weight:700;margin-bottom:6px;font-size:1rem}
+.req{color:var(--red)}
+.opt{font-weight:400;color:var(--muted);font-size:.9rem}
+input[type=text],input[type=email],input[type=tel],select{
+  width:100%;font:inherit;font-size:1rem;color:var(--ink);background:#fff;border:2.5px solid var(--ink);border-radius:10px;padding:12px 14px;min-height:52px;
+  transition:box-shadow .15s,border-color .15s;appearance:none;-webkit-appearance:none
+}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--ink) 50%),linear-gradient(135deg,var(--ink) 50%,transparent 50%);background-position:calc(100% - 22px) 52%,calc(100% - 16px) 52%;background-size:6px 6px;background-repeat:no-repeat;padding-right:40px}
+input:focus,select:focus{outline:none;box-shadow:0 0 0 4px var(--lime);border-color:var(--ink)}
+.hint{font-size:.85rem;color:var(--muted);margin-top:5px}
+.err{display:none;color:var(--red);font-size:.9rem;font-weight:500;margin-top:6px}
+.field.invalid .err{display:block}
+.field.invalid input,.field.invalid select{border-color:var(--red);background:#FFF3F1}
+fieldset{border:0;margin:0 0 18px;padding:0;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;width:1px;height:1px}
+.chip span{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:999px;padding:8px 14px;min-height:42px;cursor:pointer;background:#fff;font-size:.95rem;transition:background .15s,transform .15s;user-select:none}
+.chip span::before{content:"+";font-weight:700}
+.chip input:checked + span{background:var(--lime);transform:rotate(-2deg)}
+.chip input:checked + span::before{content:"✓"}
+.chip input:focus-visible + span{outline:3px solid var(--ink);outline-offset:2px}
+.consent{display:flex;gap:12px;align-items:flex-start;cursor:pointer;font-size:.95rem}
+.consent input{flex:none;width:24px;height:24px;margin:1px 0 0;accent-color:var(--ink);cursor:pointer}
+.privacy{font-size:.84rem;color:var(--muted);margin:8px 0 0 36px}
+.hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}
+.submit{width:100%;margin-top:8px;font-size:1.2rem}
+.submit .spin{display:none;width:20px;height:20px;border:3px solid var(--ink);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+.submit.loading .spin{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.form-msg{margin-top:12px;font-size:.92rem;min-height:1em}
+.form-msg.error{color:var(--red);font-weight:500}
+.dev-notice{display:none;margin-top:12px;font:12px/1.4 ui-monospace,monospace;background:#fff6c2;border:1px dashed #a08a00;padding:8px 10px;border-radius:8px}
+.dev-notice.show{display:block}
+.success{display:none;text-align:center;padding:10px 4px}
+.success.show{display:block}
+.success .check{width:96px;height:96px;margin:0 auto 14px;display:block}
+.success .check circle{fill:var(--lime);stroke:var(--ink);stroke-width:4;transform-origin:center;transform:scale(0);animation:popc .5s cubic-bezier(.3,1.6,.5,1) forwards}
+.success .check path{fill:none;stroke:var(--ink);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .5s ease .45s forwards}
+@keyframes popc{to{transform:scale(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+.success h3{margin-bottom:10px}
+.success p{color:var(--ink-2);margin:0 0 20px}
+.success .btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:18px;z-index:2}
+.confetti i{position:absolute;top:-20px;width:12px;height:16px;opacity:0;animation:fall 1.6s ease-in forwards}
+@keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(420px) rotate(540deg)}}
+
+/* ---------- trust / sos ---------- */
+.trust-grid{display:grid;gap:40px}
+.trust-big{font-family:var(--head);font-weight:700;text-transform:uppercase;font-size:clamp(1.9rem,7.6vw,3.2rem);line-height:1.02;margin:0 0 18px}
+.trust-big .hl::before{opacity:1;height:1.02em;bottom:-.04em}
+.paper--ink .lead{color:#E2D9C9}
+.no-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.no-list li{display:flex;gap:12px;align-items:flex-start;color:#E9E1D3}
+.no-list li::before{content:"✕";flex:none;width:28px;height:28px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.9rem;margin-top:1px}
+.warn-note{margin-top:20px;padding:12px 14px;border:2px dashed var(--lime);border-radius:10px;color:var(--lime);font-weight:500}
+.sos{background:var(--paper-2);color:var(--ink);border-radius:var(--radius);padding:24px 20px;border:3px solid var(--red);position:relative;transform:rotate(-.6deg)}
+.sos.reveal:not(.in){transform:translateX(40px) rotate(3deg)}
+.sos h3{color:var(--red);margin-bottom:14px}
+.sos ol{list-style:none;margin:0;padding:0;counter-reset:c;display:grid;gap:12px}
+.sos li{counter-increment:c;display:flex;gap:12px;align-items:flex-start}
+.sos li::before{content:counter(c);flex:none;width:30px;height:30px;border-radius:8px;background:var(--ink);color:var(--paper);font-family:var(--head);font-weight:700;display:grid;place-items:center}
+.sos li b{display:block}
+
+/* ---------- footer ---------- */
+.foot{padding:70px 0 40px;text-align:center;position:relative;overflow:hidden}
+.foot .wordmark{font-size:clamp(1.55rem,8.2vw,3.6rem);justify-content:center;max-width:100%}
+.foot .wordmark svg{width:44px;height:44px}
+.foot .tag{font-family:var(--head);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 22px}
+.foot .sub-links{justify-content:center}
+.copy{margin-top:28px;font-size:.85rem;color:var(--muted)}
+
+/* ---------- desktop ---------- */
+@media (min-width:760px){
+  .sec{padding:110px 0}
+  .hero{padding:40px 0 100px}
+  .hero-grid{grid-template-columns:1.2fr .8fr}
+  .cta-row .btn:first-child{flex:0 1 auto}
+  .steps{grid-template-columns:repeat(3,1fr)}
+  .quiz-list{grid-template-columns:1fr 1fr}
+  .cards{grid-template-columns:repeat(3,1fr)}
+  .form-card{padding:40px 40px 32px}
+  .trust-grid{grid-template-columns:1.1fr .9fr;align-items:center}
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;transition-delay:0s!important}
+  .reveal,.reveal.r,.reveal.side{opacity:1;transform:none}
+  .hl::before{transform:scaleX(1) skewX(-8deg) rotate(-1.2deg)}
+  .ticker-track{animation:none!important;flex-wrap:wrap;width:auto}
+  .ticker ul[aria-hidden]{display:none}
+  .ticker ul{flex-wrap:wrap;justify-content:center;row-gap:6px}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#subscribe">Перейти к форме подписки</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="wordmark" href="#top" aria-label="Антимошенник — в начало">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 8 13v17c0 15 10 26 24 30 14-4 24-15 24-30V13Z" fill="#141210"/><path d="m20 32 8 8 16-17" fill="none" stroke="#C8F04A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      АНТИМОШЕННИК
+    </a>
+    <nav class="top-links" aria-label="Наши каналы">
+      <a class="chip-link" href="https://max.ru/channel_antimoshennik" target="_blank" rel="noopener">MAX</a>
+      <a class="chip-link" href="https://vk.ru/shchit_ot_moshennikov" target="_blank" rel="noopener">VK</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<!-- ========== HERO ========== -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="scrap scrap--a" style="width:120px;height:70px;top:40px;right:-30px;transform:rotate(14deg)"></div>
+  <div class="scrap scrap--b" style="width:70px;height:56px;bottom:90px;left:-18px;transform:rotate(-20deg)"></div>
+  <svg class="zig" style="width:140px;top:8px;left:42%" viewBox="0 0 140 20" aria-hidden="true"><polyline points="2,16 16,4 30,16 44,4 58,16 72,4 86,16 100,4 114,16 128,4 138,12" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>
+  <div class="wrap hero-grid">
+    <div>
+      <span class="kicker">Канал-предупреждение</span>
+      <h1 class="h1" id="hero-title">Узнай о новой схеме <span class="hl">раньше</span> мошенников</h1>
+      <p class="tagline">Проверь, прежде чем поверить.</p>
+      <p class="lead">Короткие понятные предупреждения о свежих схемах обмана: как распознать, что делать и как защитить близких. Без паники и без рекламы.</p>
+      <div class="cta-row">
+        <a class="btn" href="#subscribe">Подписаться на предупреждения</a>
+        <a class="btn btn--ghost" id="scamCheckBtn" href="#" target="_blank" rel="noopener" hidden>Проверить сообщение</a>
+      </div>
+      <div class="sub-links">
+        <a class="btn btn--dark btn--sm" href="https://max.ru/channel_antimoshennik" target="_blank" rel="noopener">Канал в MAX</a>
+        <a class="btn btn--ghost btn--sm" href="https://vk.ru/shchit_ot_moshennikov" target="_blank" rel="noopener">Сообщество VK</a>
+      </div>
+    </div>
+
+    <div class="phone-stage" aria-label="Пример: на телефон приходят типичные сообщения мошенников" role="img">
+      <svg class="zig" style="width:90px;bottom:0;right:4%;transform:rotate(-12deg)" viewBox="0 0 90 20" aria-hidden="true"><polyline points="2,16 14,4 26,16 38,4 50,16 62,4 74,16 88,6" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      <div class="phone" id="phone" aria-hidden="true">
+        <div class="screen">
+          <div class="screen-head"><div class="avatar">?</div><div><b>+7 9•• ••• •• 13</b><span>неизвестный номер</span></div></div>
+          <div class="msgs">
+            <div class="msg m1">Мама, это я, новый номер. Старый телефон разбился, срочно нужна помощь…<small>10:41</small></div>
+            <div class="msg m2">Ваш перевод заблокирован Росфинмониторингом. Для разблокировки следуйте инструкции специалиста.<small>10:43</small></div>
+            <div class="msg m3">Код из СМС для записи к врачу продиктуйте, пожалуйста, оператору.<small>10:44</small></div>
+            <div class="typing"><i></i><i></i><i></i></div>
+          </div>
+        </div>
+        <div class="stamp">МОШЕННИКИ</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TICKER ========== -->
+<div class="ticker" aria-label="Распространённые схемы обмана">
+  <div class="ticker-track">
+    <ul>
+      <li>«Мама, это я»</li><li>Служба безопасности банка</li><li>Код из СМС</li><li>«Росфинмониторинг»</li><li>Работа за взнос</li><li>Фейковый шиномонтаж</li><li>Дипфейк-звонок</li><li>Продление полиса ОМС</li><li>Курьер с посылкой</li><li>Инвестиции с гарантией</li><li>Замена счётчиков</li>
+    </ul>
+    <ul aria-hidden="true">
+      <li>«Мама, это я»</li><li>Служба безопасности банка</li><li>Код из СМС</li><li>«Росфинмониторинг»</li><li>Работа за взнос</li><li>Фейковый шиномонтаж</li><li>Дипфейк-звонок</li><li>Продление полиса ОМС</li><li>Курьер с посылкой</li><li>Инвестиции с гарантией</li><li>Замена счётчиков</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== HOW IT WORKS ========== -->
+<section class="sec" aria-labelledby="how-title">
+  <div class="scrap scrap--c" style="width:60px;height:46px;top:60px;right:8%;transform:rotate(18deg)"></div>
+  <div class="wrap">
+    <div class="sec-head reveal side">
+      <span class="kicker">3 шага</span>
+      <h2 class="h2" id="how-title">Как это <span class="hl">работает</span></h2>
+    </div>
+    <ol class="steps">
+      <li class="step reveal d1"><span class="step-num">01</span><h3 class="h3">Подписываетесь</h3><p>Оставляете имя и контакт — это займёт полминуты. Никаких оплат и скрытых условий.</p></li>
+      <li class="step reveal r d2"><span class="step-num">02</span><h3 class="h3">Получаете предупреждение</h3><p>Когда появляется свежая схема, присылаем короткое предупреждение: как она выглядит и где подвох.</p></li>
+      <li class="step reveal d3"><span class="step-num">03</span><h3 class="h3">Знаете, что делать</h3><p>Понимаете, как себя вести, и предупреждаете близких — особенно родителей, бабушек и дедушек.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ========== QUIZ ========== -->
+<section class="sec paper" aria-labelledby="quiz-title">
+  <svg class="zig" style="width:120px;top:30px;right:6%" viewBox="0 0 140 20" aria-hidden="true"><polyline points="2,16 16,4 30,16 44,4 58,16 72,4 86,16 100,4 114,16 128,4 138,12" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">Мини-тест</span>
+      <h2 class="h2" id="quiz-title">Развод <span class="hl">или нет?</span></h2>
+      <p class="lead">Прочитайте сообщение и решите сами. Осторожно: не все сообщения — обман.</p>
+    </div>
+    <ol class="quiz-list" id="quiz"></ol>
+    <div class="quiz-result" id="quizResult" role="status" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ========== FRESH SCHEMES ========== -->
+<section class="sec" aria-labelledby="fresh-title">
+  <div class="scrap scrap--a" style="width:90px;height:60px;top:40px;left:-24px;transform:rotate(-8deg)"></div>
+  <div class="wrap">
+    <div class="sec-head reveal side">
+      <span class="kicker">Свежее</span>
+      <h2 class="h2" id="fresh-title">Свежие <span class="hl">схемы</span></h2>
+      <p class="lead">Так выглядят предупреждения, которые мы присылаем: коротко, по делу и с понятным советом.</p>
+    </div>
+    <div class="cards">
+      <article class="card reveal d1">
+        <span class="tape" aria-hidden="true"></span>
+        <div class="card-top"><span class="dot" aria-hidden="true"></span><div><span class="verdict-label">Схема</span><h3 class="h3">Фейковые сайты шиномонтажа</h3></div></div>
+        <p>В сезон смены резины появляются сайты-клоны с «онлайн-записью» и предоплатой. Деньги уходят мошенникам, а места никто не бронировал.</p>
+        <p class="tip">✅ Записывайтесь по телефону из проверенных карт и отзывов. Не вносите предоплату по ссылке из рекламы.</p>
+      </article>
+      <article class="card reveal r d2">
+        <span class="tape" aria-hidden="true"></span>
+        <div class="card-top"><span class="dot" aria-hidden="true"></span><div><span class="verdict-label">Схема</span><h3 class="h3">«Работа за взнос»</h3></div></div>
+        <p>Обещают лёгкий заработок на дому: отзывы, сборка ручек, «оператор». Но сначала просят оплатить «обучение», «страховку» или «материалы».</p>
+        <p class="tip">✅ Настоящий работодатель не берёт денег с сотрудника. Просят взнос — это обман.</p>
+      </article>
+      <article class="card reveal d3">
+        <span class="tape" aria-hidden="true"></span>
+        <div class="card-top"><span class="dot" aria-hidden="true"></span><div><span class="verdict-label">Схема</span><h3 class="h3">Дипфейк-звонок от «родственника»</h3></div></div>
+        <p>Видеозвонок, где лицо и голос похожи на близкого человека. Он взволнован и просит срочно перевести деньги.</p>
+        <p class="tip">✅ Положите трубку и перезвоните сами на знакомый номер. Договоритесь с семьёй о кодовом слове.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FORM ========== -->
+<section class="sec" id="subscribe" aria-labelledby="sub-title">
+  <div class="scrap scrap--b" style="width:80px;height:64px;top:20px;right:4%;transform:rotate(22deg)"></div>
+  <div class="wrap">
+    <div class="sec-head reveal" style="text-align:center">
+      <span class="kicker">Бесплатно</span>
+      <h2 class="h2" id="sub-title">Подпишитесь на <span class="hl">предупреждения</span></h2>
+      <p class="lead" style="margin-left:auto;margin-right:auto">Присылаем только важное — когда появляется новая схема.</p>
+    </div>
+    <div class="form-shell reveal r">
+      <div class="form-card" id="formCard">
+        <span class="tape" aria-hidden="true"></span>
+        <div class="confetti" id="confetti" aria-hidden="true"></div>
+        <form id="subForm" novalidate>
+          <div class="field" id="fld-name">
+            <label for="f-name">Имя <span class="req" aria-hidden="true">*</span></label>
+            <input type="text" id="f-name" name="name" autocomplete="given-name" maxlength="80" required aria-describedby="e-name">
+            <div class="err" id="e-name">Напишите, как к вам обращаться.</div>
+          </div>
+          <div class="field" id="fld-contact">
+            <label for="f-contact">Телефон или e-mail <span class="req" aria-hidden="true">*</span></label>
+            <input type="text" id="f-contact" name="contact" autocomplete="on" inputmode="email" maxlength="120" required aria-describedby="h-contact e-contact" placeholder="+7 900 123-45-67 или name@mail.ru">
+            <div class="hint" id="h-contact">Российский номер или адрес электронной почты.</div>
+            <div class="err" id="e-contact">Проверьте номер телефона (+7…) или e-mail.</div>
+          </div>
+          <div class="field" id="fld-channel">
+            <label for="f-channel">Куда присылать <span class="req" aria-hidden="true">*</span></label>
+            <select id="f-channel" name="channel" required aria-describedby="e-channel">
+              <option value="" selected disabled>Выберите вариант</option>
+              <option value="Telegram">Telegram</option>
+              <option value="MAX">MAX</option>
+              <option value="E-mail">E-mail</option>
+              <option value="SMS">SMS</option>
+            </select>
+            <div class="err" id="e-channel">Выберите, куда присылать предупреждения.</div>
+          </div>
+          <fieldset>
+            <legend class="legend">Кого защищаем <span class="opt">(необязательно)</span></legend>
+            <div class="chips">
+              <label class="chip"><input type="checkbox" name="protect" value="себя"><span>себя</span></label>
+              <label class="chip"><input type="checkbox" name="protect" value="родителей"><span>родителей</span></label>
+              <label class="chip"><input type="checkbox" name="protect" value="детей"><span>детей</span></label>
+              <label class="chip"><input type="checkbox" name="protect" value="бабушку/дедушку"><span>бабушку/дедушку</span></label>
+            </div>
+          </fieldset>
+          <div class="hp" aria-hidden="true">
+            <label for="f-website">Не заполняйте это поле</label>
+            <input type="text" id="f-website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+          <div class="field" id="fld-consent">
+            <label class="consent" for="f-consent">
+              <input type="checkbox" id="f-consent" name="consent" value="yes" required aria-describedby="p-consent e-consent">
+              <span>Согласен(на) на обработку персональных данных для отправки предупреждений <span class="req" aria-hidden="true">*</span></span>
+            </label>
+            <p class="privacy" id="p-consent">Данные используются только для рассылки предупреждений, никому не передаются. Отписаться можно в любой момент.</p>
+            <div class="err" id="e-consent" style="margin-left:36px">Без согласия мы не сможем присылать предупреждения.</div>
+          </div>
+          <button type="submit" class="btn submit" id="submitBtn"><span class="spin" aria-hidden="true"></span><span class="label">Подписаться</span></button>
+          <div class="form-msg" id="formMsg" role="status" aria-live="polite"></div>
+          <div class="dev-notice" id="devNotice">DEV: SHEET_ENDPOINT пуст — данные никуда не отправляются (только console.warn).</div>
+        </form>
+        <div class="success" id="success" tabindex="-1" role="status" aria-live="polite">
+          <svg class="check" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><path d="M30 52 l14 14 l27 -30"/></svg>
+          <h3 class="h2">Готово!</h3>
+          <p>Первое предупреждение уже скоро. А пока загляните в наш канал — там уже есть разборы свежих схем.</p>
+          <div class="btns">
+            <a class="btn btn--dark btn--sm" href="https://max.ru/channel_antimoshennik" target="_blank" rel="noopener">Канал в MAX</a>
+            <a class="btn btn--ghost btn--sm" href="https://vk.ru/shchit_ot_moshennikov" target="_blank" rel="noopener">Сообщество VK</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TRUST + SOS ========== -->
+<section class="sec paper paper--ink" aria-labelledby="trust-title">
+  <div class="wrap trust-grid">
+    <div class="reveal side">
+      <span class="kicker" style="background:var(--lime);color:var(--ink)">Честно</span>
+      <h2 class="trust-big" id="trust-title">Мы не продаём курсы, не просим денег и <span class="hl" style="color:var(--ink)">никогда</span> не пишем первыми</h2>
+      <p class="lead">«Антимошенник» объясняет, как распознать обман и защитить себя. Мы никогда не рассказываем, как обманывать.</p>
+      <ul class="no-list">
+        <li>Не продаём курсы, «защиту» и платные консультации.</li>
+        <li>Не просим перевести деньги, назвать код из СМС или данные карты.</li>
+        <li>Не пишем первыми в личные сообщения и не звоним.</li>
+      </ul>
+      <p class="warn-note">Если вам пишет «Антимошенник» в личку — это мошенники. Не отвечайте и пожалуйтесь на аккаунт.</p>
+    </div>
+    <div class="sos reveal d2" aria-labelledby="sos-title">
+      <h3 class="h3" id="sos-title">🆘 Если уже попались</h3>
+      <ol>
+        <li><span><b>Позвоните в банк</b>по номеру, напечатанному на обороте вашей карты. Не по номеру из сообщения.</span></li>
+        <li><span><b>Заблокируйте карту</b>в приложении банка или по телефону — как можно скорее.</span></li>
+        <li><span><b>Смените пароли</b>от Госуслуг и почты, включите вход по коду.</span></li>
+        <li><span><b>Напишите заявление в полицию</b>или позвоните по номеру 112. Сохраните переписку и номера.</span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="scrap scrap--c" style="width:70px;height:50px;top:50px;left:6%;transform:rotate(-14deg)"></div>
+  <svg class="zig" style="width:120px;bottom:30px;right:5%" viewBox="0 0 140 20" aria-hidden="true"><polyline points="2,16 16,4 30,16 44,4 58,16 72,4 86,16 100,4 114,16 128,4 138,12" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>
+  <div class="wrap">
+    <a class="wordmark" href="#top" aria-label="Антимошенник — в начало">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 8 13v17c0 15 10 26 24 30 14-4 24-15 24-30V13Z" fill="#141210"/><path d="m20 32 8 8 16-17" fill="none" stroke="#C8F04A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      АНТИМОШЕННИК
+    </a>
+    <p class="tag">Проверь, прежде чем поверить.</p>
+    <div class="sub-links">
+      <a class="btn btn--dark btn--sm" href="https://max.ru/channel_antimoshennik" target="_blank" rel="noopener">MAX</a>
+      <a class="btn btn--ghost btn--sm" href="https://vk.ru/shchit_ot_moshennikov" target="_blank" rel="noopener">VK</a>
+    </div>
+    <p class="copy">© 2026 Антимошенник</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---- кнопка «Проверить сообщение» ---- */
+  if (typeof SCAM_CHECK_URL === "string" && SCAM_CHECK_URL.trim()) {
+    var sc = $("#scamCheckBtn"); sc.href = SCAM_CHECK_URL.trim(); sc.hidden = false;
+  }
+
+  /* ---- появление при прокрутке ---- */
+  var targets = document.querySelectorAll(".reveal, .hl");
+  if ("IntersectionObserver" in window && !reduce) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+    targets.forEach(function (el) { io.observe(el); });
+  } else {
+    targets.forEach(function (el) { el.classList.add("in"); });
+  }
+
+  /* ---- телефон в первом экране ---- */
+  var phone = $("#phone");
+  if (reduce) { phone.classList.add("static"); }
+  else {
+    var play = function () { phone.classList.remove("play"); void phone.offsetWidth; phone.classList.add("play"); };
+    play();
+    setInterval(function () { if (!document.hidden) play(); }, 11000);
+  }
+
+  /* ---- мини-тест ---- */
+  var QUIZ = [
+    { from: "Неизвестный номер", text: "Мам, у меня телефон разбился, пишу с номера друга. Срочно переведи 7000 на эту карту, потом всё объясню!", scam: true,
+      why: "Новый номер + срочно + деньги на чужую карту. Перезвоните на старый номер или задайте вопрос, ответ на который знает только ваш ребёнок." },
+    { from: "Ваш банк", text: "Код для входа: 4821. Никому не сообщайте этот код, даже сотрудникам банка.", scam: false,
+      why: "Обычное служебное СМС, если вы сами входите в приложение. Опасно, только когда этот код у вас кто-то просит." },
+    { from: "Госуслуги?", text: "Ваша учётная запись будет удалена через 24 часа. Подтвердите данные: gosuslugi-proverka.ru", scam: true,
+      why: "Угроза, срок «24 часа» и чужой адрес сайта. Настоящий портал — только gosuslugi.ru, заходите туда сами, не по ссылке." },
+    { from: "Поликлиника", text: "Вы записаны к терапевту 14 октября в 10:30, кабинет 212. Отменить запись можно в приложении или по телефону регистратуры.", scam: false,
+      why: "Здесь не просят ни кодов, ни денег, ни перехода по ссылке. Это обычное напоминание о записи." }
+  ];
+  var list = $("#quiz"), result = $("#quizResult"), answered = 0, correct = 0;
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  QUIZ.forEach(function (q, i) {
+    var li = document.createElement("li");
+    li.className = "q reveal" + (i % 2 ? " r" : "");
+    li.innerHTML =
+      '<span class="q-badge" aria-hidden="true"></span>' +
+      '<p class="q-from">' + esc(q.from) + '</p>' +
+      '<p class="q-bubble">' + esc(q.text) + '</p>' +
+      '<div class="q-actions" role="group" aria-label="Ваш ответ на сообщение ' + (i + 1) + '">' +
+        '<button type="button" class="q-btn" data-scam="1">❌ Развод</button>' +
+        '<button type="button" class="q-btn" data-scam="0">✅ Всё нормально</button>' +
+      '</div>' +
+      '<div class="q-verdict" aria-live="polite"></div>';
+    list.appendChild(li);
+    if (io) io.observe(li); else li.classList.add("in");
+    li.querySelectorAll(".q-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var said = btn.getAttribute("data-scam") === "1";
+        var ok = said === q.scam;
+        li.querySelectorAll(".q-btn").forEach(function (b) { b.disabled = true; if (b !== btn) b.classList.add("dim"); });
+        btn.classList.add("chosen", ok ? "right" : "wrong");
+        var v = li.querySelector(".q-verdict");
+        v.className = "q-verdict show " + (q.scam ? "scam" : "ok");
+        v.innerHTML = "<b>" + (ok ? "Верно! " : "Не совсем. ") + (q.scam ? "Это развод" : "Всё нормально") + "</b>" + esc(q.why);
+        var badge = li.querySelector(".q-badge");
+        badge.textContent = q.scam ? "Развод" : "Норм";
+        badge.className = "q-badge show " + (q.scam ? "scam" : "ok");
+        answered++; if (ok) correct++;
+        if (answered === QUIZ.length) {
+          var msg = correct === QUIZ.length ? "Отличное чутьё! Подпишитесь, чтобы так же легко узнавать новые схемы."
+            : correct >= QUIZ.length / 2 ? "Неплохо! Но мошенники постоянно придумывают новое — предупреждения помогут не попасться."
+            : "Мошенники умеют убеждать. Подпишитесь — будем заранее рассказывать, на что обращать внимание.";
+          result.innerHTML = "<strong>" + correct + " из " + QUIZ.length + "</strong>" + msg +
+            ' <a href="#subscribe" style="font-weight:700">Подписаться →</a>';
+          result.classList.add("show");
+        }
+      });
+    });
+  });
+
+  /* ---- форма подписки ---- */
+  var form = $("#subForm"), btn = $("#submitBtn"), msgEl = $("#formMsg"), success = $("#success");
+  var debug = new URLSearchParams(location.search).get("debug") === "1";
+  if (!SHEET_ENDPOINT && debug) $("#devNotice").classList.add("show");
+  var COOLDOWN = 10000, KEY = "am_last_submit";
+
+  function lsGet() { try { return +localStorage.getItem(KEY) || 0; } catch (e) { return 0; } }
+  function lsSet(v) { try { localStorage.setItem(KEY, String(v)); } catch (e) {} }
+
+  function validContact(v) {
+    v = v.trim();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return true;
+    if (!/^[\d\s()+\-]+$/.test(v)) return false;
+    var d = v.replace(/\D/g, "");
+    return (d.length === 11 && /^[78]/.test(d)) || (d.length === 10 && d.charAt(0) === "9");
+  }
+  function setInvalid(id, bad) {
+    var f = $("#" + id); f.classList.toggle("invalid", bad);
+    var inp = f.querySelector("input,select"); if (inp) inp.setAttribute("aria-invalid", bad ? "true" : "false");
+    return bad;
+  }
+  ["f-name", "f-contact", "f-channel", "f-consent"].forEach(function (id) {
+    var el = $("#" + id);
+    el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", function () {
+      el.closest(".field").classList.remove("invalid"); el.setAttribute("aria-invalid", "false");
+    });
+  });
+
+  function confetti() {
+    if (reduce) return;
+    var box = $("#confetti"), colors = ["#C8F04A", "#C2603A", "#F07F22", "#141210"];
+    for (var i = 0; i < 26; i++) {
+      var p = document.createElement("i");
+      p.style.left = Math.random() * 100 + "%";
+      p.style.background = colors[i % colors.length];
+      p.style.animationDelay = Math.random() * 0.4 + "s";
+      p.style.clipPath = "polygon(" + [0, 1, 2, 3].map(function () { return Math.round(Math.random() * 100) + "% " + Math.round(Math.random() * 100) + "%"; }).join(",") + ")";
+      box.appendChild(p);
+    }
+    setTimeout(function () { box.innerHTML = ""; }, 2400);
+  }
+  function showSuccess() {
+    form.hidden = true;
+    success.classList.add("show");
+    confetti();
+    success.focus({ preventScroll: true });
+    var top = $("#formCard").getBoundingClientRect().top;
+    if (top < 0 || top > innerHeight * 0.6) $("#formCard").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  }
+  function lockButton(ms) {
+    btn.disabled = true;
+    setTimeout(function () { btn.disabled = false; }, ms);
+  }
+
+  form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    msgEl.textContent = ""; msgEl.className = "form-msg";
+    var name = $("#f-name").value.trim(), contact = $("#f-contact").value.trim(),
+        channel = $("#f-channel").value, consent = $("#f-consent").checked,
+        hp = $("#f-website").value.trim();
+    var protect = Array.prototype.map.call(form.querySelectorAll('input[name="protect"]:checked'), function (c) { return c.value; }).join(", ");
+
+    var bad = [
+      setInvalid("fld-name", name.length < 2) && "f-name",
+      setInvalid("fld-contact", !validContact(contact)) && "f-contact",
+      setInvalid("fld-channel", !channel) && "f-channel",
+      setInvalid("fld-consent", !consent) && "f-consent"
+    ].filter(Boolean);
+    if (bad.length) { $("#" + bad[0]).focus(); return; }
+
+    var since = Date.now() - lsGet();
+    if (since < COOLDOWN) {
+      msgEl.textContent = "Подождите несколько секунд и попробуйте снова.";
+      msgEl.className = "form-msg error";
+      lockButton(COOLDOWN - since);
+      return;
+    }
+    lsSet(Date.now());
+    lockButton(COOLDOWN);
+
+    if (hp) { showSuccess(); return; } /* бот — делаем вид, что всё хорошо */
+
+    btn.classList.add("loading");
+    btn.querySelector(".label").textContent = "Отправляем…";
+
+    var body = new URLSearchParams({
+      name: name.slice(0, 200), contact: contact.slice(0, 200), channel: channel, protect: protect,
+      consent: "yes", page: location.href.slice(0, 200), ua: navigator.userAgent.slice(0, 200), website: hp
+    });
+
+    var send = SHEET_ENDPOINT
+      ? fetch(SHEET_ENDPOINT, { method: "POST", mode: "no-cors", body: body })
+      : new Promise(function (res) { console.warn("[Антимошенник] SHEET_ENDPOINT пуст — заявка не отправлена:", Object.fromEntries(body)); setTimeout(res, 700); });
+
+    send.then(function () {
+      showSuccess();
+    }).catch(function (err) {
+      console.error(err);
+      msgEl.textContent = "Не получилось отправить. Проверьте интернет и попробуйте ещё раз через несколько секунд.";
+      msgEl.className = "form-msg error";
+    }).then(function () {
+      btn.classList.remove("loading");
+      btn.querySelector(".label").textContent = "Подписаться";
+    });
+  });
+})();
+</script>
+</body>
+</html>
